@@ -294,7 +294,7 @@ impl DeviceHandler {
                 continue;
             }
 
-            let mut data = 0u32;
+            let mut data = 0u16;
 
             for c in line.as_bytes().iter() {
                 match *c {
@@ -317,7 +317,7 @@ impl DeviceHandler {
                     )));
                 }
 
-                data = (data << 4) | (remapped.unwrap() as u32);
+                data = (data << 4) | (remapped.unwrap() as u16);
             }
             program_data.push(data);
         }
@@ -325,7 +325,7 @@ impl DeviceHandler {
         let u8program_data = unsafe {
             std::slice::from_raw_parts_mut(
                 program_data.as_mut_ptr() as *mut u8,
-                program_data.len() * std::mem::size_of::<u32>(),
+                program_data.len() * std::mem::size_of::<u16>(),
             )
         };
 
