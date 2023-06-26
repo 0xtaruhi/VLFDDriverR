@@ -15,7 +15,7 @@ fn main() {
     device_handler.open().unwrap();
     device_handler.init().unwrap();
     device_handler.program(std::path::Path::new("./tests/bitfile/Dino_fde_yosys.bit")).unwrap();
-    device_handler.close();
+    device_handler.close().unwrap();
 }
 
 #[cfg(test)]
