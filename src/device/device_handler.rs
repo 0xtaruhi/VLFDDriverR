@@ -216,13 +216,7 @@ impl DeviceHandler {
             program_data.push(data);
         }
         self.encrypt(&mut program_data);
-
-        let u8program_data = unsafe {
-            std::slice::from_raw_parts_mut(
-                program_data.as_mut_ptr() as *mut u8,
-                program_data.len() * std::mem::size_of::<u16>(),
-            )
-        };
+        let program_data = &program_data;
 
         self.activate_fpga_programmer()?;
 
@@ -231,18 +225,17 @@ impl DeviceHandler {
 
         let max_single_transfer_size = fifo_size * 2;
         {
-            let program_data_size = u8program_data.len();
-            info!("Program data size: {} bytes", program_data_size);
+            info!("Program data size: {} bytes", program_data.len() * 2);
 
             let mut offset = 0;
 
-            while offset < program_data_size {
+            while offset < program_data.len() {
                 let mut transfer_size = max_single_transfer_size;
-                if offset + transfer_size > program_data_size {
-                    transfer_size = program_data_size - offset;
+                if offset + transfer_size > program_data.len() {
+                    transfer_size = program_data.len() - offset;
                 }
 
-                let transfer_data = &mut u8program_data[offset..offset + transfer_size];
+                let transfer_data = &program_data[offset..offset + transfer_size];
                 self.usb.write_usb(EndPoint::EP2, &transfer_data)?;
                 offset += transfer_size;
             }
