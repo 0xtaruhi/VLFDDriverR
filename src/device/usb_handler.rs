@@ -1,6 +1,6 @@
-use libusb1_sys as ffi;
-use super::device_handler::DeviceResult;
 use super::device_error::DeviceError;
+use super::device_handler::DeviceResult;
+use libusb1_sys as ffi;
 use std::os::raw::c_int;
 
 use log::{error, info};
@@ -15,7 +15,6 @@ pub enum EndPoint {
 
 const VID: u16 = 0x2200;
 const PID: u16 = 0x2008;
-
 
 pub struct UsbHandler {
     handle: *mut ffi::libusb_device_handle,
@@ -36,6 +35,11 @@ impl UsbHandler {
         let handle =
             unsafe { ffi::libusb_open_device_with_vid_pid(std::ptr::null_mut(), VID, PID) };
 
+        if handle.is_null() {
+            error!("Device open failed");
+            return Err(DeviceError::OpenError);
+        }
+
         unsafe {
             let error_check = |r: c_int| {
                 if r < 0 {
@@ -53,13 +57,7 @@ impl UsbHandler {
             error_check(ffi::libusb_clear_halt(handle, EndPoint::EP8 as u8))?;
         }
 
-        if handle.is_null() {
-            error!("Device open failed");
-            return Err(DeviceError::OpenError);
-        } else {
-            info!("Device opened");
-        }
-
+        info!("Device opened");
         self.handle = handle;
         Ok(())
     }
