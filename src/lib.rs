@@ -1,6 +1,7 @@
 mod device;
 
-use std::os::raw::*;
+use std::{os::raw::*};
+use device::program_handler::ProgramHandler;
 
 #[no_mangle]
 pub extern "C" fn init_logger() {
@@ -11,38 +12,32 @@ pub extern "C" fn init_logger() {
 
 #[no_mangle]
 pub extern "C" fn program(bitfile: *const c_char) -> c_int {
-    let mut device_handler = device::device_handler::DeviceHandler::new();
+    let mut program_handler = ProgramHandler::new();
 
-    let result = device_handler.open();
-
-    if let Err(e) = result {
-        println!("Error: {}", e);
-        return 1;
+    // Open device
+    let result = program_handler.open_device();
+    if result.is_err() {
+        return -1;
     }
 
-    let result = device_handler.init();
-
-    if let Err(e) = result {
-        println!("Error: {}", e);
-        return 1;
+    // Program
+    let result = program_handler.program(
+        std::path::Path::new(
+            unsafe { std::ffi::CStr::from_ptr(bitfile) }
+                .to_str()
+                .unwrap(),
+        ),
+    );
+    if result.is_err() {
+        return -1;
     }
 
-    let result = device_handler.program(std::path::Path::new(unsafe {
-        std::ffi::CStr::from_ptr(bitfile).to_str().unwrap()
-    }));
-
-    if let Err(e) = result {
-        println!("Error: {}", e);
-        return 1;
+    // Close device
+    let result = program_handler.close_device();
+    if result.is_err() {
+        return -1;
     }
-
-    let result = device_handler.close();
-
-    if let Err(e) = result {
-        println!("Error: {}", e);
-        return 1;
-    }
-
+    
     return 0;
 }
 

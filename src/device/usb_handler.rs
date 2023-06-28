@@ -41,16 +41,21 @@ impl UsbHandler {
         }
 
         unsafe {
+            let result = ffi::libusb_claim_interface(handle, 0);
+            if result < 0 {
+                error!("Device open failed: libusb_claim_interface");
+                ffi::libusb_close(handle);
+                return Err(DeviceError::OpenError);
+            }
+
             let error_check = |r: c_int| {
                 if r < 0 {
                     error!("Device open failed");
-                    ffi::libusb_close(handle);
+                    self.try_close();
                     return Err(DeviceError::OpenError);
                 }
                 Ok(())
             };
-
-            error_check(ffi::libusb_claim_interface(handle, 0))?;
             error_check(ffi::libusb_clear_halt(handle, EndPoint::EP2 as u8))?;
             error_check(ffi::libusb_clear_halt(handle, EndPoint::EP4 as u8))?;
             error_check(ffi::libusb_clear_halt(handle, EndPoint::EP6 as u8))?;
@@ -60,6 +65,20 @@ impl UsbHandler {
         info!("Device opened");
         self.handle = handle;
         Ok(())
+    }
+
+    /// This function is used to close the device. It will release the interface.
+    pub fn try_close(&self) {
+        if !self.handle.is_null() {
+            unsafe {
+                ffi::libusb_release_interface(self.handle, 0);
+                ffi::libusb_close(self.handle);
+            }
+        }
+
+        unsafe {
+            ffi::libusb_exit(std::ptr::null_mut());
+        }
     }
 
     pub fn close(&mut self) -> DeviceResult<()> {
@@ -104,6 +123,7 @@ impl UsbHandler {
 
             if result != 0 {
                 error!("USB read error: {}", result);
+                self.try_close();
                 return Err(DeviceError::ReadError(String::from("USB read error")));
             }
 
@@ -146,6 +166,7 @@ impl UsbHandler {
 
             if result != 0 {
                 error!("USB write error: {}", result);
+                self.try_close();
                 return Err(DeviceError::WriteError(String::from("USB write error")));
             }
 
