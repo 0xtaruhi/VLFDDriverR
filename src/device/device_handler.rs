@@ -102,11 +102,11 @@ impl DeviceHandler {
     }
 
     fn decrypt_base(&self, buffer: &mut [u16]) {
-        let encript_key = &self.encrypt_table[16..32];
+        let encrypt_key = &self.encrypt_table[16..32];
         let mut decode_index = *self.decode_index.borrow();
 
         for i in 0..buffer.len() {
-            buffer[i] ^= encript_key[decode_index];
+            buffer[i] ^= encrypt_key[decode_index];
             decode_index = (decode_index + 1) & 0x0f;
         }
 
@@ -125,11 +125,11 @@ impl DeviceHandler {
     }
 
     fn encrypt_base(&self, buffer: &mut [u16]) {
-        let encript_key = &self.encrypt_table[0..16];
+        let encrypt_key = &self.encrypt_table[0..16];
         let mut encode_index = *self.encode_index.borrow();
 
         for i in 0..buffer.len() {
-            buffer[i] ^= encript_key[encode_index];
+            buffer[i] ^= encrypt_key[encode_index];
             encode_index = (encode_index + 1) & 0x0f;
         }
 
